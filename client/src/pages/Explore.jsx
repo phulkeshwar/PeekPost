@@ -26,7 +26,7 @@ const ExploreSearch = ({ query, setQuery }) => {
     }
     const fetchUsers = async () => {
       try {
-        const { data } = await api.get(`/users/search?q=${query}`);
+        const { data } = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
         setResults(data);
       } catch {
         const localMatches = getStoredUsers().filter((user) =>

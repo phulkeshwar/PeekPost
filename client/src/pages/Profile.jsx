@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import ProfileHeader from "../components/profile/ProfileHeader";
@@ -21,6 +21,7 @@ const DEMO_PROFILE = {
 
 const Profile = () => {
   const user = useSelector((state) => state.auth.user);
+  const navigate = useNavigate();
   const { username } = useParams();
   const targetUsername = username || user?.username;
   const isOwnProfile = user?.username === targetUsername;
@@ -28,6 +29,7 @@ const Profile = () => {
   const [profile, setProfile]   = useState(null);
   const [posts,   setPosts]     = useState([]);
   const [error,   setError]     = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     if (!targetUsername) return;
@@ -66,12 +68,31 @@ const Profile = () => {
     );
   }
 
+  const openConversation = async () => {
+    if (isOwnProfile || !displayProfile?.id) {
+      return;
+    }
+
+    setStartingChat(true);
+    try {
+      const { data } = await api.post("/messages/conversations", {
+        participants: [displayProfile.id],
+      });
+      navigate(`/messages?conversation=${data._id}`);
+    } catch {
+      navigate("/messages");
+    } finally {
+      setStartingChat(false);
+    }
+  };
+
   return (
     <div className="ig-profile-wrap">
       <ProfileHeader
         profile={displayProfile}
         postsCount={posts.length || 124}
         isOwnProfile={isOwnProfile}
+        onMessage={startingChat ? undefined : openConversation}
       />
       <PostGrid posts={posts} />
     </div>

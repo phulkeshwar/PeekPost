@@ -16,6 +16,18 @@ const getConversationName = (conversation, currentUserId) => {
   return partner?.fullName || partner?.username || "Conversation";
 };
 
+const getConversationPreview = (conversation) => {
+  if (!conversation?.lastMessage) {
+    return "Start chatting";
+  }
+
+  if (typeof conversation.lastMessage === "string") {
+    return conversation.lastMessage;
+  }
+
+  return conversation.lastMessage.text || "Sent an attachment";
+};
+
 const ChatList = ({ conversations = [], activeConversationId, onSelect, currentUserId }) => {
   return (
     <aside className="ig-chat-list">
@@ -54,7 +66,7 @@ const ChatList = ({ conversations = [], activeConversationId, onSelect, currentU
               
               <div className="ig-chat-item-info">
                 <div className="ig-chat-item-name">{getConversationName(conversation, currentUserId)}</div>
-                <div className="ig-chat-item-preview">{conversation.lastMessage || "Active 2h ago"}</div>
+                <div className="ig-chat-item-preview">{getConversationPreview(conversation)}</div>
               </div>
               
               <div className="ig-chat-item-time">{conversation.time || ""}</div>

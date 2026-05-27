@@ -10,12 +10,13 @@ import {
 } from "../controllers/story.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 import { injectAds } from "../middlewares/premium.middleware.js";
+import { upload } from "../middlewares/upload.middleware.js";
 
 const router = Router();
 
 router.use(verifyToken);
 
-router.post("/", createStory);
+router.post("/", upload.single("media"), createStory);
 router.get("/feed", injectAds, getStoriesFeed);
 router.get("/:userId", getUserStories);
 router.post("/:id/view", markStoryViewed);

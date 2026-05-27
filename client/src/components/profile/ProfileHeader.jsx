@@ -12,7 +12,7 @@ const VerifiedIcon = () => (
   </svg>
 );
 
-const ProfileHeader = ({ profile, postsCount, isOwnProfile }) => (
+const ProfileHeader = ({ profile, postsCount, isOwnProfile, onMessage }) => (
   <section className="ig-profile-header">
     {/* Avatar */}
     <div>
@@ -45,7 +45,9 @@ const ProfileHeader = ({ profile, postsCount, isOwnProfile }) => (
             <button className="ig-profile-btn ig-profile-btn-primary" type="button">
               Follow
             </button>
-            <button className="ig-profile-btn" type="button">Message</button>
+            <button className="ig-profile-btn" type="button" onClick={onMessage}>
+              Message
+            </button>
             <button className="ig-profile-icon-btn" type="button">+ Person</button>
             <button type="button" className="ig-profile-more-btn">
               •••

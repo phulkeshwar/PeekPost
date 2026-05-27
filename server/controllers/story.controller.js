@@ -3,11 +3,17 @@ import { Ad } from "../models/Ad.model.js";
 import { User } from "../models/User.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { injectAdsInFeed } from "../utils/adInjector.js";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 const plus24Hours = () => new Date(Date.now() + 24 * 60 * 60 * 1000);
 
 export const createStory = asyncHandler(async (req, res) => {
-  const { media, text = "", stickers = [], audience = "public" } = req.body;
+  const { media: bodyMedia, text = "", stickers = [], audience = "public" } = req.body;
+
+  let media = bodyMedia;
+  if (req.file) {
+    media = await uploadToCloudinary(req.file, "peekpost/stories");
+  }
 
   if (!media?.url || !media?.type) {
     const error = new Error("media.url and media.type are required");

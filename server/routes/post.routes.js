@@ -13,12 +13,13 @@ import {
 } from "../controllers/post.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 import { injectAds } from "../middlewares/premium.middleware.js";
+import { upload } from "../middlewares/upload.middleware.js";
 
 const router = Router();
 
 router.use(verifyToken);
 
-router.post("/", createPost);
+router.post("/", upload.array("media", 10), createPost);
 router.get("/feed", injectAds, getFeed);
 router.get("/user/:userId", getPostsByUser);
 router.get("/:id", getPostById);

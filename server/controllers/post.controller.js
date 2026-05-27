@@ -4,6 +4,7 @@ import { User } from "../models/User.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { scorePosts } from "../utils/feedAlgorithm.js";
 import { injectAdsInFeed } from "../utils/adInjector.js";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 const parseTags = (caption = "") => {
   const hashtags = [...caption.matchAll(/#(\w+)/g)].map((match) => match[1].toLowerCase());
@@ -12,7 +13,31 @@ const parseTags = (caption = "") => {
 };
 
 export const createPost = asyncHandler(async (req, res) => {
-  const { media = [], caption = "", commentsDisabled = false, location = {} } = req.body;
+  const { caption = "", commentsDisabled = false } = req.body;
+  let { media = [] } = req.body;
+  let { location = {} } = req.body;
+
+  if (typeof media === "string") {
+    try {
+      media = JSON.parse(media);
+    } catch (_error) {
+      media = [];
+    }
+  }
+
+  if (typeof location === "string") {
+    try {
+      location = JSON.parse(location);
+    } catch (_error) {
+      location = {};
+    }
+  }
+
+  if (req.files?.length) {
+    media = await Promise.all(
+      req.files.map((file) => uploadToCloudinary(file, "peekpost/posts")),
+    );
+  }
 
   if (!Array.isArray(media) || media.length === 0) {
     const error = new Error("At least one media item is required");

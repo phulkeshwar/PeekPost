@@ -1,5 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const getConversationId = (message) =>
+  typeof message.conversation === "string" ? message.conversation : message.conversation?._id;
+
 const messageSlice = createSlice({
   name: "message",
   initialState: {
@@ -18,7 +21,25 @@ const messageSlice = createSlice({
       state.messages = action.payload;
     },
     addMessage: (state, action) => {
-      state.messages.push(action.payload);
+      const message = action.payload;
+      if (state.messages.some((existingMessage) => existingMessage._id === message._id)) {
+        return;
+      }
+
+      state.messages.push(message);
+
+      const conversationId = getConversationId(message);
+      if (!conversationId) {
+        return;
+      }
+
+      const targetConversation = state.conversations.find(
+        (conversation) => conversation._id === conversationId,
+      );
+
+      if (targetConversation) {
+        targetConversation.lastMessage = message;
+      }
     },
   },
 });

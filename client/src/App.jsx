@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import Home from "./pages/Home.jsx";
 import Explore from "./pages/Explore.jsx";

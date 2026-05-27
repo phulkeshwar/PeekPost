@@ -136,16 +136,31 @@ export const searchUsers = asyncHandler(async (req, res) => {
     return;
   }
 
+  const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const searchPattern = new RegExp(escapedQuery, "i");
+
   const users = await User.find({
+    isDeactivated: false,
     $or: [
-      { username: { $regex: q, $options: "i" } },
-      { fullName: { $regex: q, $options: "i" } },
+      { username: searchPattern },
+      { fullName: searchPattern },
+      { email: searchPattern },
     ],
   })
-    .select("username fullName avatar")
+    .select("username fullName avatar email")
+    .sort({ createdAt: -1 })
     .limit(20);
 
-  res.json(users);
+  res.json(
+    users.map((user) => ({
+      id: user._id,
+      _id: user._id,
+      username: user.username,
+      fullName: user.fullName,
+      avatar: user.avatar,
+      email: user.email,
+    })),
+  );
 });
 
 export const deleteMe = asyncHandler(async (req, res) => {

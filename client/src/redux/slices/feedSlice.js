@@ -7,6 +7,29 @@ export const fetchFeed = createAsyncThunk("feed/fetch", async (page = 1) => {
   return data;
 });
 
+const normalizeFeedPayload = (payload, requestedPage = 1) => {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      page: requestedPage,
+      hasMore: payload.length >= 10,
+    };
+  }
+
+  const items = Array.isArray(payload?.items)
+    ? payload.items
+    : Array.isArray(payload?.posts)
+      ? payload.posts
+      : [];
+
+  return {
+    items,
+    page: Number(payload?.page) || requestedPage,
+    hasMore:
+      typeof payload?.hasMore === "boolean" ? payload.hasMore : items.length >= 10,
+  };
+};
+
 const feedSlice = createSlice({
   name: "feed",
   initialState: {
@@ -32,9 +55,13 @@ const feedSlice = createSlice({
       })
       .addCase(fetchFeed.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.meta.arg === 1 ? action.payload.items : [...state.items, ...action.payload.items];
-        state.page = action.payload.page;
-        state.hasMore = action.payload.hasMore;
+        const normalized = normalizeFeedPayload(action.payload, Number(action.meta.arg) || 1);
+        state.items =
+          action.meta.arg === 1
+            ? normalized.items
+            : [...(state.items || []), ...normalized.items];
+        state.page = normalized.page;
+        state.hasMore = normalized.hasMore;
       })
       .addCase(fetchFeed.rejected, (state) => {
         state.loading = false;

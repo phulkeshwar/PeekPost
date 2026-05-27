@@ -30,9 +30,25 @@ const normalizeAuthPayload = (payload, fallbackUsername = "user") => {
   };
 };
 
+const safeConnectSocket = (token) => {
+  try {
+    connectSocket(token);
+  } catch {
+    // Keep auth flow functional even if realtime connection fails.
+  }
+};
+
+const safeDisconnectSocket = () => {
+  try {
+    disconnectSocket();
+  } catch {
+    // Ignore socket teardown issues during logout.
+  }
+};
+
 if (initialToken) {
   setAuthToken(initialToken);
-  connectSocket(initialToken);
+  safeConnectSocket(initialToken);
 }
 
 export const login = createAsyncThunk("auth/login", async (payload, { rejectWithValue }) => {
@@ -117,7 +133,7 @@ const authSlice = createSlice({
       localStorage.removeItem("peekpost_access_token");
       localStorage.removeItem("peekpost_user");
       setAuthToken("");
-      disconnectSocket();
+      safeDisconnectSocket();
     },
   },
   extraReducers: (builder) => {
@@ -138,7 +154,7 @@ const authSlice = createSlice({
         localStorage.setItem("peekpost_access_token", action.payload.accessToken);
         localStorage.setItem("peekpost_user", JSON.stringify(action.payload.user));
         setAuthToken(action.payload.accessToken);
-        connectSocket(action.payload.accessToken);
+        safeConnectSocket(action.payload.accessToken);
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -160,7 +176,7 @@ const authSlice = createSlice({
         localStorage.setItem("peekpost_access_token", action.payload.accessToken);
         localStorage.setItem("peekpost_user", JSON.stringify(action.payload.user));
         setAuthToken(action.payload.accessToken);
-        connectSocket(action.payload.accessToken);
+        safeConnectSocket(action.payload.accessToken);
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;

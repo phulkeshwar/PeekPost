@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import ChatList from "../components/messages/ChatList";
@@ -14,18 +15,28 @@ import { useSocket } from "../hooks/useSocket";
 
 const Messages = () => {
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
   const token = useSelector((state) => state.auth.accessToken);
   const user = useSelector((state) => state.auth.user);
   const { conversations, activeConversationId, messages } = useSelector((state) => state.message);
   const [draft, setDraft] = useState("");
+  const requestedConversationId = searchParams.get("conversation");
 
   useEffect(() => {
     const load = async () => {
       try {
         const { data } = await api.get("/messages/conversations");
         dispatch(setConversations(data));
-        if (data[0]) {
+        const requestedConversation = requestedConversationId
+          ? data.find((conversation) => conversation._id === requestedConversationId)
+          : null;
+
+        if (requestedConversation) {
+          dispatch(setActiveConversation(requestedConversation._id));
+        } else if (data[0]) {
           dispatch(setActiveConversation(data[0]._id));
+        } else {
+          dispatch(setActiveConversation(""));
         }
       } catch {
         dispatch(setConversations([]));
@@ -34,7 +45,7 @@ const Messages = () => {
     };
 
     load();
-  }, [dispatch]);
+  }, [dispatch, requestedConversationId]);
 
   useEffect(() => {
     if (!activeConversationId) return;
@@ -54,7 +65,10 @@ const Messages = () => {
   const handlers = useMemo(
     () => ({
       "message:new": (message) => {
-        if (message.conversation === activeConversationId || message.conversation?._id === activeConversationId) {
+        if (
+          message.conversation === activeConversationId ||
+          message.conversation?._id === activeConversationId
+        ) {
           dispatch(addMessage(message));
         }
       },
@@ -90,14 +104,14 @@ const Messages = () => {
         conversations={conversations}
         activeConversationId={activeConversationId}
         onSelect={(conversationId) => dispatch(setActiveConversation(conversationId))}
-        currentUserId={user?.id}
+        currentUserId={user?.id || user?._id}
       />
       <ChatWindow
         messages={messages}
         draft={draft}
         onDraftChange={setDraft}
         onSend={send}
-        currentUserId={user?.id}
+        currentUserId={user?.id || user?._id}
         activeConversation={activeConversation}
       />
     </div>

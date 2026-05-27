@@ -25,14 +25,34 @@ export const createConversation = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const conversation = await Conversation.create({
-    participants: participantIds,
-    name,
-    isGroup: participantIds.length > 2,
-  });
+  const isGroup = participantIds.length > 2;
+  let conversation = null;
+  let created = false;
 
-  const populated = await Conversation.findById(conversation._id).populate("participants", "username fullName avatar");
-  res.status(201).json(populated);
+  if (!isGroup) {
+    conversation = await Conversation.findOne({
+      isGroup: false,
+      participants: { $all: participantIds, $size: participantIds.length },
+    });
+  }
+
+  if (!conversation) {
+    conversation = await Conversation.create({
+      participants: participantIds,
+      name,
+      isGroup,
+    });
+    created = true;
+  }
+
+  const populated = await Conversation.findById(conversation._id)
+    .populate("participants", "username fullName avatar")
+    .populate({
+      path: "lastMessage",
+      populate: { path: "sender", select: "username fullName avatar" },
+    });
+
+  res.status(created ? 201 : 200).json(populated);
 });
 
 export const getMessages = asyncHandler(async (req, res) => {
@@ -79,15 +99,19 @@ export const sendMessage = asyncHandler(async (req, res) => {
   await conversation.save();
 
   const populated = await Message.findById(message._id).populate("sender", "username fullName avatar");
+  const responsePayload = {
+    ...populated.toObject(),
+    conversation: conversation._id,
+  };
 
   const io = getIO();
   if (io) {
     for (const participantId of conversation.participants) {
-      io.to(`user:${participantId.toString()}`).emit("message:new", populated);
+      io.to(`user:${participantId.toString()}`).emit("message:new", responsePayload);
     }
   }
 
-  res.status(201).json(populated);
+  res.status(201).json(responsePayload);
 });
 
 export const deleteMessage = asyncHandler(async (req, res) => {
