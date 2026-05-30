@@ -56,6 +56,25 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+// Add interceptor to automatically log out on 401 unauthorized errors (e.g. invalid/expired JWT or mock token)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem("peekpost_access_token");
+      localStorage.removeItem("peekpost_user");
+      setAuthToken("");
+      if (
+        !window.location.pathname.includes("/login") &&
+        !window.location.pathname.includes("/register")
+      ) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;

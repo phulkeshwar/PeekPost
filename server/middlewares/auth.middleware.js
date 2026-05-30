@@ -12,17 +12,23 @@ export const verifyToken = asyncHandler(async (req, _res, next) => {
     throw error;
   }
 
-  const payload = jwt.verify(token, process.env.JWT_SECRET);
-  const user = await User.findById(payload.userId).select("-password -refreshToken");
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(payload.userId).select("-password -refreshToken");
 
-  if (!user || user.isDeactivated) {
-    const error = new Error("Invalid user session");
+    if (!user || user.isDeactivated) {
+      const error = new Error("Invalid user session");
+      error.status = 401;
+      throw error;
+    }
+
+    req.user = user;
+    next();
+  } catch (err) {
+    const error = new Error("Invalid or expired authentication token");
     error.status = 401;
-    throw error;
+    next(error);
   }
-
-  req.user = user;
-  next();
 });
 
 export const optionalAuth = asyncHandler(async (req, _res, next) => {
