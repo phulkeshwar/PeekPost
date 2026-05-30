@@ -7,6 +7,7 @@ import { User } from "../models/User.model.js";
 import { Post } from "../models/Post.model.js";
 import { Story } from "../models/Story.model.js";
 import { Ad } from "../models/Ad.model.js";
+import { Reel } from "../models/Reel.model.js";
 
 dotenv.config();
 
@@ -90,7 +91,7 @@ const adCampaigns = [
 const seed = async () => {
   await connectDB();
 
-  await Promise.all([User.deleteMany({}), Post.deleteMany({}), Story.deleteMany({}), Ad.deleteMany({})]);
+  await Promise.all([User.deleteMany({}), Post.deleteMany({}), Story.deleteMany({}), Ad.deleteMany({}), Reel.deleteMany({})]);
 
   const password = await bcrypt.hash(DEMO_PASSWORD, 12);
 
