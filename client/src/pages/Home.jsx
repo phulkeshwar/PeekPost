@@ -273,10 +273,29 @@ const Home = () => {
                   value={storyReply}
                   onChange={(e) => setStoryReply(e.target.value)}
                   placeholder={`Reply to ${activeStory.username}…`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && storyReply.trim()) {
+                      setStoryNotice(`Replied to ${activeStory.username}! 💬`);
+                      setStoryReply("");
+                      setTimeout(() => setStoryNotice(""), 1800);
+                    }
+                  }}
                 />
-                <span style={{ fontSize: 22, color: "#fff", cursor: "pointer" }}>♡</span>
-                <span style={{ fontSize: 22, color: "#fff", cursor: "pointer" }}>➤</span>
+                <span 
+                  style={{ fontSize: 22, color: storyLikedMap[activeStory.username] ? "red" : "#fff", cursor: "pointer", transition: "color 0.15s" }}
+                  onClick={() => toggleLikeStory(activeStory.username)}
+                >
+                  {storyLikedMap[activeStory.username] ? "♥" : "♡"}
+                </span>
+                <span style={{ fontSize: 22, color: "#fff", cursor: "pointer" }} onClick={() => handleShareStory(activeStory.username)}>➤</span>
               </div>
+
+              {/* Story Reaction Notification */}
+              {storyNotice && (
+                <div style={{ position: "absolute", top: 80, left: "50%", transform: "translateX(-50%)", background: "rgba(0,102,255,0.9)", color: "white", padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 700, zIndex: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.25)" }}>
+                  {storyNotice}
+                </div>
+              )}
             </div>
 
             <button
