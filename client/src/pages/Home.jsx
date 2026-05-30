@@ -5,6 +5,7 @@ import { fetchFeed } from "../redux/slices/feedSlice";
 import FeedPost from "../components/feed/FeedPost";
 import FeedAd from "../components/feed/FeedAd";
 import { MOCK_POSTS } from "../utils/mockData";
+import { api } from "../services/api";
 
 /* ── SVG icons ─────────────────────────────────────────── */
 const HeartIcon = ({ filled }) => (
@@ -39,6 +40,24 @@ const Home = () => {
   const { items, page, hasMore, loading } = useSelector((state) => state.feed);
   const [activeStoryIndex, setActiveStoryIndex] = useState(null);
   const [storyReply, setStoryReply] = useState("");
+  const [followedSuggestIds, setFollowedSuggestIds] = useState(new Set());
+
+  const handleFollowSuggested = async (suggestedId) => {
+    try {
+      const { data } = await api.post(`/users/${suggestedId}/follow`);
+      setFollowedSuggestIds((prev) => {
+        const next = new Set(prev);
+        if (data.following) {
+          next.add(suggestedId);
+        } else {
+          next.delete(suggestedId);
+        }
+        return next;
+      });
+    } catch {
+      alert("Failed to toggle follow status.");
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchFeed(1))
