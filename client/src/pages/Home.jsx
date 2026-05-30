@@ -41,6 +41,8 @@ const Home = () => {
   const [activeStoryIndex, setActiveStoryIndex] = useState(null);
   const [storyReply, setStoryReply] = useState("");
   const [followedSuggestIds, setFollowedSuggestIds] = useState(new Set());
+  const [storyLikedMap, setStoryLikedMap] = useState({});
+  const [storyNotice, setStoryNotice] = useState("");
 
   const handleFollowSuggested = async (suggestedId) => {
     try {
@@ -57,6 +59,20 @@ const Home = () => {
     } catch {
       alert("Failed to toggle follow status.");
     }
+  };
+
+  const toggleLikeStory = (username) => {
+    const isLiked = !storyLikedMap[username];
+    setStoryLikedMap((prev) => ({ ...prev, [username]: isLiked }));
+    if (isLiked) {
+      setStoryNotice("Sent a story like! ❤️");
+      setTimeout(() => setStoryNotice(""), 1800);
+    }
+  };
+
+  const handleShareStory = (username) => {
+    setStoryNotice(`Shared ${username}'s story! ✉️`);
+    setTimeout(() => setStoryNotice(""), 1800);
   };
 
   useEffect(() => {
