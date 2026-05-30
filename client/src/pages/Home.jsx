@@ -185,7 +185,9 @@ const Home = () => {
                   <div className="ig-suggest-item-detail">Suggested for you</div>
                 </div>
               </div>
-              <span className="ig-link">Follow</span>
+              <span className="ig-link" onClick={() => handleFollowSuggested(s._id)}>
+                {followedSuggestIds.has(s._id) ? "Following" : "Follow"}
+              </span>
             </div>
           ))}
         </div>
