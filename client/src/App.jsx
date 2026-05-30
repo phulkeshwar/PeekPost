@@ -15,6 +15,7 @@ import Premium from "./pages/Premium.jsx";
 import { prependPost } from "./redux/slices/feedSlice.js";
 import { api } from "./services/api.js";
 import ThemeToggle from "./components/common/ThemeToggle.jsx";
+import AnimatedPage from "./components/common/AnimatedPage.jsx";
 
 const ProtectedRoute = ({ children }) => {
   const token = useSelector((state) => state.auth.accessToken);
@@ -230,14 +231,14 @@ function App() {
       <main className="ig-main">
         <div className="ig-page">
           <Routes>
-            <Route path="/"             element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/explore"      element={<ProtectedRoute><Explore /></ProtectedRoute>} />
-            <Route path="/reels"        element={<ProtectedRoute><Reels /></ProtectedRoute>} />
-            <Route path="/profile/:username?" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/messages"     element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            <Route path="/notifications"element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-            <Route path="/settings"     element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/premium"      element={<ProtectedRoute><Premium /></ProtectedRoute>} />
+            <Route path="/"             element={<ProtectedRoute><AnimatedPage><Home /></AnimatedPage></ProtectedRoute>} />
+            <Route path="/explore"      element={<ProtectedRoute><AnimatedPage><Explore /></AnimatedPage></ProtectedRoute>} />
+            <Route path="/reels"        element={<ProtectedRoute><AnimatedPage><Reels /></AnimatedPage></ProtectedRoute>} />
+            <Route path="/profile/:username?" element={<ProtectedRoute><AnimatedPage><Profile /></AnimatedPage></ProtectedRoute>} />
+            <Route path="/messages"     element={<ProtectedRoute><AnimatedPage><Messages /></AnimatedPage></ProtectedRoute>} />
+            <Route path="/notifications"element={<ProtectedRoute><AnimatedPage><Notifications /></AnimatedPage></ProtectedRoute>} />
+            <Route path="/settings"     element={<ProtectedRoute><AnimatedPage><Settings /></AnimatedPage></ProtectedRoute>} />
+            <Route path="/premium"      element={<ProtectedRoute><AnimatedPage><Premium /></AnimatedPage></ProtectedRoute>} />
             <Route path="*"             element={<Navigate to="/" replace />} />
           </Routes>
         </div>

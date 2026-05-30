@@ -229,7 +229,6 @@ img { display: block; }
 
 .ig-textarea { min-height: 80px; resize: vertical; }
 
-/* ─── Buttons ───────────────────────────────────────────── */
 .btn-primary,
 .ig-btn-primary {
   display: inline-flex;
@@ -242,10 +241,23 @@ img { display: block; }
   padding: 9px 18px;
   font-weight: 600;
   font-size: 14px;
-  transition: opacity 0.15s;
+  transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.15s;
 }
 
 .ig-btn-primary:hover { opacity: 0.88; }
+
+.btn-primary:active,
+.ig-btn-primary:active,
+.ig-profile-btn:active,
+.ig-nav-item:active,
+.ig-feed-actions-btn:active,
+.btn-ghost:active,
+.ig-btn-ghost:active,
+.ig-compose-send:active,
+.ig-compose-icon:active,
+.ig-link:active {
+  transform: scale(0.95);
+}
 .ig-btn-primary:disabled,
 .btn-primary:disabled { opacity: 0.5; }
 
