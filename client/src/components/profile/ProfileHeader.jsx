@@ -66,7 +66,7 @@ const ProfileHeader = ({ profile, postsCount, isOwnProfile, onMessage }) => (
       {/* Row 3: bio */}
       <div className="ig-profile-bio">
         <strong>{profile.fullName || profile.username}</strong>
-        {!isOwnProfile && <VerifiedIcon />}
+        {(profile.isVerified || profile.premiumBadge) && <VerifiedIcon />}
         {profile.category && <div style={{ color: "var(--tcl-muted)", fontSize: 13 }}>{profile.category}</div>}
         <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
           {profile.bio || "Visual Storyteller & Creative Director.\nCapturing the quiet moments between the noise."}

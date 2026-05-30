@@ -1,23 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* ─── Design Tokens ─────────────────────────────────────── */
+/* ─── Design Tokens & Theme Variables ─────────────────────── */
 :root {
-  --tcl-bg:        #f5f5f5;
+  /* Light Theme (Default) */
+  --tcl-bg:        #f9fafb;
   --tcl-surface:   #ffffff;
-  --tcl-border:    #e8e8e8;
-  --tcl-text:      #111111;
-  --tcl-muted:     #8a8a8a;
-  --tcl-blue:      #0066ff;
-  --tcl-blue-bg:   #e6f0ff;
-  --tcl-overlay:   rgba(0, 0, 0, 0.55);
-  --tcl-sidebar-w: 220px;
-  --tcl-radius-sm: 8px;
-  --tcl-radius-md: 12px;
-  --tcl-radius-lg: 16px;
-  --tcl-shadow:    0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+  --tcl-border:    #e5e7eb;
+  --tcl-text:      #111827;
+  --tcl-muted:     #6b7280;
+  --tcl-blue:      #3b82f6;
+  --tcl-blue-bg:   #eff6ff;
+  --tcl-overlay:   rgba(0, 0, 0, 0.6);
+  --tcl-sidebar-w: 240px;
+  --tcl-radius-sm: 10px;
+  --tcl-radius-md: 16px;
+  --tcl-radius-lg: 24px;
+  --tcl-shadow:    0 4px 20px -2px rgba(17, 24, 39, 0.05), 0 2px 6px -1px rgba(17, 24, 39, 0.03);
+  --tcl-nav-active-bg: #eff6ff;
+  --tcl-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Reset ─────────────────────────────────────────────── */
+[data-theme='dark'] {
+  /* Sleek Space Dark Theme */
+  --tcl-bg:        #090d16;
+  --tcl-surface:   #111827;
+  --tcl-border:    #1f2937;
+  --tcl-text:      #f9fafb;
+  --tcl-muted:     #9ca3af;
+  --tcl-blue:      #60a5fa;
+  --tcl-blue-bg:   #1e293b;
+  --tcl-overlay:   rgba(0, 0, 0, 0.85);
+  --tcl-shadow:    0 10px 30px -10px rgba(0, 0, 0, 0.7);
+  --tcl-nav-active-bg: #1e293b;
+}
+
+/* ─── Reset & Smooth Transition ─────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root { height: 100%; }
@@ -28,6 +45,21 @@ body {
   color: var(--tcl-text);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.ig-sidebar,
+.ig-feed-card,
+.card,
+.ig-settings-pane,
+.ig-chat-window,
+.ig-input,
+.ig-textarea,
+.ig-select,
+.ig-nav-item,
+.ig-nav-icon-wrap,
+.ig-settings-menu-item {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 a { color: inherit; text-decoration: none; }

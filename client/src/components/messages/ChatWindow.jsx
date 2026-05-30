@@ -106,6 +106,11 @@ const ChatWindow = ({ messages = [], draft, onDraftChange, onSend, currentUserId
             value={draft || ""} 
             placeholder="Message..." 
             onChange={(event) => onDraftChange && onDraftChange(event.target.value)} 
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                onSend();
+              }
+            }}
           />
           
           <button type="button" className="ig-compose-icon">

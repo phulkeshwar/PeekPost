@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../services/api";
 
@@ -41,12 +41,51 @@ const FeedPost = ({ post }) => {
   const [comment, setComment]     = useState("");
   const [likeCount, setLikeCount] = useState(post.likes?.length || 0);
   const [expandedCaption, setExpandedCaption] = useState(false);
+  const [comments, setComments]   = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
 
   const mockComments = useMemo(() => [
     { id: 1, user: "organic_algorithm", avatar: null, text: "Love this shot. Clean framing.", time: "1d" },
     { id: 2, user: "im_grohit",         avatar: null, text: "This looks amazing.",            time: "8h" },
     { id: 3, user: "saurabh952",        avatar: null, text: "Can you share settings for this?", time: "4h" },
   ], []);
+
+  useEffect(() => {
+    if (!open) return;
+    const fetchComments = async () => {
+      setLoadingComments(true);
+      try {
+        const { data } = await api.get(`/comments/post/${post._id}`);
+        setComments(data);
+      } catch (err) {
+        console.warn("Could not fetch real comments, falling back to mock", err.message);
+        setComments(mockComments.map(c => ({
+          _id: `mock-${c.id}`,
+          text: c.text,
+          createdAt: new Date(Date.now() - (c.time.includes("d") ? 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000)),
+          author: {
+            username: c.user,
+            fullName: c.user,
+            avatar: `https://placehold.co/64x64?text=${c.user[0].toUpperCase()}`
+          }
+        })));
+      } finally {
+        setLoadingComments(false);
+      }
+    };
+    fetchComments();
+  }, [open, post._id, mockComments]);
+
+  const submitComment = async (textToSubmit) => {
+    if (!textToSubmit?.trim()) return;
+    try {
+      const { data } = await api.post(`/comments/post/${post._id}`, { text: textToSubmit.trim() });
+      setComments((prev) => [data, ...prev]);
+      setComment("");
+    } catch (err) {
+      alert("Failed to submit comment: " + (err.response?.data?.message || err.message));
+    }
+  };
 
   const media = post.media?.[0];
 
@@ -168,10 +207,13 @@ const FeedPost = ({ post }) => {
             type="text"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submitComment(comment);
+            }}
             placeholder="Add a comment…"
           />
           {comment && (
-            <span className="ig-link" style={{ fontWeight: 600, fontSize: 13 }}>Post</span>
+            <span className="ig-link" style={{ fontWeight: 600, fontSize: 13 }} onClick={() => submitComment(comment)}>Post</span>
           )}
         </div>
       </article>
@@ -226,30 +268,34 @@ const FeedPost = ({ post }) => {
               {/* Comments */}
               <div className="ig-post-modal-comments">
                 {/* Caption as comment */}
-                <div className="ig-comment">
-                  <img className="ig-comment-avatar" src={post.author?.avatar || "https://placehold.co/64x64?text=U"} alt={post.author?.username} />
-                  <div className="ig-comment-text">
-                    <strong style={{ marginRight: 6 }}>{post.author?.username}</strong>
-                    {post.caption}
-                    <div className="ig-comment-time">3d · See translation</div>
-                  </div>
-                </div>
-                {/* Mock comments */}
-                {mockComments.map((c) => (
-                  <div key={c.id} className="ig-comment">
-                    <img className="ig-comment-avatar" src={`https://placehold.co/64x64?text=${c.user[0].toUpperCase()}`} alt={c.user} />
+                {post.caption && (
+                  <div className="ig-comment">
+                    <img className="ig-comment-avatar" src={post.author?.avatar || "https://placehold.co/64x64?text=U"} alt={post.author?.username} />
                     <div className="ig-comment-text">
-                      <strong style={{ marginRight: 6 }}>{c.user}</strong>{c.text}
-                      <div className="ig-comment-time">
-                        {c.time} · 1 like ·{" "}
-                        <span style={{ fontWeight: 600, cursor: "pointer" }}>Reply</span>
+                      <strong style={{ marginRight: 6 }}>{post.author?.username}</strong>
+                      {post.caption}
+                      <div className="ig-comment-time">{timeAgo}</div>
+                    </div>
+                  </div>
+                )}
+                {loadingComments ? (
+                  <div style={{ padding: 10, textAlign: "center", color: "var(--tcl-muted)", fontSize: 13 }}>Loading comments...</div>
+                ) : comments.length === 0 ? (
+                  <div style={{ padding: 10, textAlign: "center", color: "var(--tcl-muted)", fontSize: 13 }}>No comments yet.</div>
+                ) : (
+                  comments.map((c) => (
+                    <div key={c._id} className="ig-comment">
+                      <img className="ig-comment-avatar" src={c.author?.avatar || `https://placehold.co/64x64?text=${c.author?.username?.[0]?.toUpperCase()}`} alt={c.author?.username} />
+                      <div className="ig-comment-text">
+                        <strong style={{ marginRight: 6 }}>{c.author?.username}</strong>{c.text}
+                        <div className="ig-comment-time">
+                          {new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} ·{" "}
+                          <span style={{ fontWeight: 600, cursor: "pointer" }}>Reply</span>
+                        </div>
                       </div>
                     </div>
-                    <button type="button" style={{ marginLeft: "auto", color: "var(--tcl-muted)", background: "none", border: "none" }}>
-                      <HeartIcon />
-                    </button>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
               {/* Bottom */}
@@ -260,7 +306,7 @@ const FeedPost = ({ post }) => {
                     <button className="ig-feed-actions-btn" type="button" onClick={handleLike}>
                       <HeartIcon filled={liked} />
                     </button>
-                    <button className="ig-feed-actions-btn" type="button">
+                    <button className="ig-feed-actions-btn" type="button" onClick={() => {}}>
                       <CommentIcon />
                     </button>
                     <button className="ig-feed-actions-btn" type="button" onClick={handleShare}>
@@ -275,14 +321,25 @@ const FeedPost = ({ post }) => {
                 {/* Like count */}
                 <div className="ig-feed-meta" style={{ paddingBottom: 4 }}>
                   <div className="ig-feed-likes">Liked by <strong>{post.author?.username}</strong> and <strong>{likeCount.toLocaleString()} others</strong></div>
-                  <div className="ig-feed-date" style={{ textTransform: "uppercase", fontSize: 10 }}>3 days ago</div>
+                  <div className="ig-feed-date" style={{ textTransform: "uppercase", fontSize: 10 }}>{timeAgo}</div>
                 </div>
 
                 {/* Add comment */}
                 <div className="ig-feed-comment-box">
                   <EmojiIcon />
-                  <input type="text" placeholder="Add a comment…" style={{ flex: 1, border: "none", outline: "none", fontSize: 14, background: "transparent", color: "var(--tcl-text)" }} />
-                  <span className="ig-link" style={{ fontWeight: 600, fontSize: 13 }}>Post</span>
+                  <input
+                    type="text"
+                    placeholder="Add a comment…"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") submitComment(comment);
+                    }}
+                    style={{ flex: 1, border: "none", outline: "none", fontSize: 14, background: "transparent", color: "var(--tcl-text)" }}
+                  />
+                  {comment && (
+                    <span className="ig-link" style={{ fontWeight: 600, fontSize: 13 }} onClick={() => submitComment(comment)}>Post</span>
+                  )}
                 </div>
               </div>
             </div>

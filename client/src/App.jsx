@@ -14,6 +14,7 @@ import Settings from "./pages/Settings.jsx";
 import Premium from "./pages/Premium.jsx";
 import { prependPost } from "./redux/slices/feedSlice.js";
 import { api } from "./services/api.js";
+import ThemeToggle from "./components/common/ThemeToggle.jsx";
 
 const ProtectedRoute = ({ children }) => {
   const token = useSelector((state) => state.auth.accessToken);
@@ -117,6 +118,8 @@ const Sidebar = ({ onOpenCreate }) => {
           />
           <span className="ig-nav-label">Profile</span>
         </NavLink>
+
+        <ThemeToggle />
       </nav>
 
       <div className="ig-nav-bottom">
