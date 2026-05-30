@@ -86,6 +86,23 @@ const Profile = () => {
     }
   };
 
+  const handleFollow = async () => {
+    if (isOwnProfile || !displayProfile?.id) return;
+    try {
+      const { data } = await api.post(`/users/${displayProfile.id}/follow`);
+      setProfile((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isFollowing: data.following,
+          followersCount: data.following ? (prev.followersCount || 0) + 1 : Math.max(0, (prev.followersCount || 0) - 1)
+        };
+      });
+    } catch {
+      alert("Failed to update follow status.");
+    }
+  };
+
   return (
     <div className="ig-profile-wrap">
       <ProfileHeader
@@ -93,6 +110,7 @@ const Profile = () => {
         postsCount={posts.length || 124}
         isOwnProfile={isOwnProfile}
         onMessage={startingChat ? undefined : openConversation}
+        onFollow={handleFollow}
       />
       <PostGrid posts={posts} />
     </div>

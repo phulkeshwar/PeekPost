@@ -42,8 +42,12 @@ const ProfileHeader = ({ profile, postsCount, isOwnProfile, onMessage }) => (
           </>
         ) : (
           <>
-            <button className="ig-profile-btn ig-profile-btn-primary" type="button">
-              Follow
+            <button 
+              className={`ig-profile-btn ${profile.isFollowing ? "" : "ig-profile-btn-primary"}`} 
+              type="button" 
+              onClick={onFollow}
+            >
+              {profile.isFollowing ? "Following" : "Follow"}
             </button>
             <button className="ig-profile-btn" type="button" onClick={onMessage}>
               Message

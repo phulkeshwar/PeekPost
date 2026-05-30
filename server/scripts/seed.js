@@ -218,11 +218,48 @@ const seed = async () => {
     })),
   );
 
+  const sampleReels = [
+    {
+      caption: "Stunning evening lights in Bengaluru. 🏙️ #cityvibes #nightlife #peekpost",
+      videoUrl: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+      audio: { title: "Original Audio", artist: "aarav.frames" }
+    },
+    {
+      caption: "Chasing sunsets along the coast. 🌊 #oceanview #travelshorts #nature",
+      videoUrl: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      audio: { title: "Coastal Drift", artist: "maya.trails" }
+    },
+    {
+      caption: "Building minimal workspace setups from scratch. 🛠️💻 #workstations #setup",
+      videoUrl: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      audio: { title: "Lofi Focus Beat", artist: "dev.codes" }
+    },
+    {
+      caption: "Mindful coffee mornings. ☕ #lofi #morningroutine #peekpost",
+      videoUrl: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+      audio: { title: "Mindful Morning", artist: "kiara.calm" }
+    }
+  ];
+
+  const seededReels = await Reel.insertMany(
+    sampleReels.map((r, index) => {
+      const author = users[index % users.length];
+      const likedBy = users.slice(2, 8).map((u) => u._id);
+      return {
+        ...r,
+        author: author._id,
+        likes: likedBy,
+        shares: index * 14 + 18,
+      };
+    })
+  );
+
   console.log("Seed complete");
   console.log(`Created ${users.length} users with profile photos`);
   console.log(`Created ${posts.length} sample posts`);
   console.log(`Created ${STORY_GROUP_COUNT} story groups (${STORY_GROUP_COUNT * STORIES_PER_GROUP} stories)`);
   console.log(`Created ${AD_COUNT} active ad campaigns`);
+  console.log(`Created ${seededReels.length} sample reels`);
   console.log(`Demo login: user1@peekpost.dev / ${DEMO_PASSWORD}`);
   await mongoose.connection.close();
 };
