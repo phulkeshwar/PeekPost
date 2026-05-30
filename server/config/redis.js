@@ -8,7 +8,12 @@ export const getRedisClient = () => {
   }
 
   if (!redisClient) {
-    redisClient = new Redis(process.env.REDIS_URL, {
+    let connectionUrl = process.env.REDIS_URL.trim();
+    if (connectionUrl.startsWith("redis-cli -u ")) {
+      connectionUrl = connectionUrl.replace("redis-cli -u ", "").trim();
+    }
+
+    redisClient = new Redis(connectionUrl, {
       maxRetriesPerRequest: 1,
       enableReadyCheck: false,
       lazyConnect: true,

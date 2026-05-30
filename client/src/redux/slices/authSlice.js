@@ -135,6 +135,10 @@ const authSlice = createSlice({
       setAuthToken("");
       safeDisconnectSocket();
     },
+    updateUserLocal: (state, action) => {
+      state.user = { ...state.user, ...action.payload };
+      localStorage.setItem("peekpost_user", JSON.stringify(state.user));
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -185,5 +189,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logoutLocal } = authSlice.actions;
+export const { logoutLocal, updateUserLocal } = authSlice.actions;
 export default authSlice.reducer;

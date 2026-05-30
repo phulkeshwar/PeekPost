@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { api } from "../services/api";
-import { logoutLocal } from "../redux/slices/authSlice";
+import { logoutLocal, updateUserLocal } from "../redux/slices/authSlice";
 
 const menuItems = [
   "Edit profile",
@@ -34,13 +34,18 @@ const Settings = () => {
 
   const save = async (event) => {
     event.preventDefault();
-    await api.put("/users/me", {
-      fullName: form.fullName,
-      bio: form.bio,
-      website: form.website,
-      avatar: form.avatar,
-    });
-    setMessage("Profile updated successfully.");
+    try {
+      const { data } = await api.put("/users/me", {
+        fullName: form.fullName,
+        bio: form.bio,
+        website: form.website,
+        avatar: form.avatar,
+      });
+      dispatch(updateUserLocal(data));
+      setMessage("Profile updated successfully.");
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to update profile.");
+    }
   };
 
   const deactivate = async () => {
