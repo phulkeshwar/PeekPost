@@ -1505,11 +1505,19 @@ img { display: block; }
 
 /* Reels */
 .ig-reels-wrap {
-  min-height: calc(100vh - 40px);
+  height: calc(100vh - 40px);
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
+  padding: 20px 0;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+}
+.ig-reels-wrap::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
 }
 
 .ig-reel-active {
@@ -1522,6 +1530,10 @@ img { display: block; }
   box-shadow: 0 20px 40px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  flex-shrink: 0;
+  margin-bottom: 24px;
 }
 
 .ig-reel-overlay {
