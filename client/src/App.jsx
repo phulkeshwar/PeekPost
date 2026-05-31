@@ -134,12 +134,30 @@ const Sidebar = ({ onOpenCreate }) => {
 };
 
 /* ── Create Post Modal ─────────────────────────────────── */
+const VIDEO_PRESETS = [
+  { name: "🎬 Nebula Space", url: "https://assets.mixkit.co/videos/preview/mixkit-nebula-in-outer-space-40016-large.mp4" },
+  { name: "🌊 Ocean Waves", url: "https://assets.mixkit.co/videos/preview/mixkit-sea-waves-crashing-on-rocks-40026-large.mp4" },
+  { name: "🌿 Forest Stream", url: "https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4" },
+  { name: "🌃 City Night", url: "https://assets.mixkit.co/videos/preview/mixkit-city-traffic-at-night-502-large.mp4" },
+  { name: "🌧️ Raindrops", url: "https://assets.mixkit.co/videos/preview/mixkit-rain-drops-falling-on-leaves-40027-large.mp4" }
+];
+
 const CreatePostModal = ({ open, onClose }) => {
   const dispatch = useDispatch();
+  const [uploadType, setUploadType] = useState("post"); // "post" or "reel"
   const [showInputs, setShowInputs] = useState(false);
   const [caption, setCaption] = useState("");
   const [mediaUrl, setMediaUrl] = useState("https://picsum.photos/seed/modal-post/1080/1080");
   const [posting, setPosting] = useState(false);
+
+  useEffect(() => {
+    // Reset defaults when switching uploadType
+    if (uploadType === "post") {
+      setMediaUrl("https://picsum.photos/seed/modal-post/1080/1080");
+    } else {
+      setMediaUrl(VIDEO_PRESETS[0].url);
+    }
+  }, [uploadType]);
 
   if (!open) return null;
 
@@ -147,15 +165,31 @@ const CreatePostModal = ({ open, onClose }) => {
     event.preventDefault();
     setPosting(true);
     try {
-      const { data } = await api.post("/posts", {
-        caption,
-        media: [{ url: mediaUrl, type: "image", publicId: "" }],
-      });
-      dispatch(prependPost(data));
-      setCaption("");
-      setMediaUrl(`https://picsum.photos/seed/${Date.now()}/1080/1080`);
-      setShowInputs(false);
-      onClose();
+      if (uploadType === "post") {
+        const { data } = await api.post("/posts", {
+          caption,
+          media: [{ url: mediaUrl, type: "image", publicId: "" }],
+        });
+        dispatch(prependPost(data));
+        setCaption("");
+        setMediaUrl(`https://picsum.photos/seed/${Date.now()}/1080/1080`);
+        setShowInputs(false);
+        onClose();
+      } else {
+        // Create new Reel
+        await api.post("/reels", {
+          videoUrl: mediaUrl,
+          caption,
+          coverUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe",
+          audio: { title: "Original Audio", artist: "you" }
+        });
+        setCaption("");
+        setMediaUrl(VIDEO_PRESETS[0].url);
+        setShowInputs(false);
+        onClose();
+        // Force refresh page to sync feed instantly
+        window.location.reload();
+      }
     } finally {
       setPosting(false);
     }
@@ -172,34 +206,89 @@ const CreatePostModal = ({ open, onClose }) => {
       </button>
 
       <section className="ig-create-modal" onClick={(event) => event.stopPropagation()}>
-        <div className="ig-create-head">Create new post</div>
+        <div className="ig-create-head">Create New Upload</div>
+        
+        {/* Tab Selectors */}
+        <div style={{ display: "flex", borderBottom: "1px solid var(--tcl-border)", background: "var(--tcl-bg)" }}>
+          <button
+            type="button"
+            onClick={() => { setUploadType("post"); setShowInputs(false); }}
+            style={{ flex: 1, padding: "12px", fontWeight: 600, fontSize: 13, cursor: "pointer", color: uploadType === "post" ? "var(--tcl-blue)" : "var(--tcl-muted)", borderBottom: uploadType === "post" ? "2px solid var(--tcl-blue)" : "2px solid transparent", background: "transparent", transition: "var(--tcl-transition)" }}
+          >
+            Post
+          </button>
+          <button
+            type="button"
+            onClick={() => { setUploadType("reel"); setShowInputs(false); }}
+            style={{ flex: 1, padding: "12px", fontWeight: 600, fontSize: 13, cursor: "pointer", color: uploadType === "reel" ? "var(--tcl-blue)" : "var(--tcl-muted)", borderBottom: uploadType === "reel" ? "2px solid var(--tcl-blue)" : "2px solid transparent", background: "transparent", transition: "var(--tcl-transition)" }}
+          >
+            Reel
+          </button>
+        </div>
+
         <div className="ig-create-body">
-          <div className="ig-drop-zone">
-            <div className="ig-drop-icon">🖼</div>
-            <h3 style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>Drag photos and videos here</h3>
-            {!showInputs && (
+          {!showInputs && (
+            <div className="ig-drop-zone">
+              <div className="ig-drop-icon">{uploadType === "post" ? "🖼" : "📹"}</div>
+              <h3 style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>
+                {uploadType === "post" ? "Drag photos and videos here" : "Select or link your vertical Reel"}
+              </h3>
               <button className="ig-btn-primary" type="button" onClick={() => setShowInputs(true)}>
-                Select from computer
+                Configure Upload
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {showInputs && (
-            <form onSubmit={submit} style={{ display: "grid", gap: 10 }}>
-              <input
-                className="ig-input"
-                value={mediaUrl}
-                onChange={(event) => setMediaUrl(event.target.value)}
-                placeholder="Image or video URL"
-              />
-              <textarea
-                className="ig-textarea"
-                value={caption}
-                onChange={(event) => setCaption(event.target.value)}
-                placeholder="Write a caption..."
-              />
+            <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+              {uploadType === "post" ? (
+                <div style={{ display: "grid", gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--tcl-muted)" }}>Image URL:</label>
+                  <input
+                    className="ig-input"
+                    value={mediaUrl}
+                    onChange={(event) => setMediaUrl(event.target.value)}
+                    placeholder="Enter image URL"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--tcl-muted)" }}>Choose a premium video preset:</label>
+                    <select
+                      className="ig-select"
+                      value={mediaUrl}
+                      onChange={(event) => setMediaUrl(event.target.value)}
+                    >
+                      {VIDEO_PRESETS.map((p) => (
+                        <option key={p.url} value={p.url}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--tcl-muted)" }}>Or enter custom video URL (.mp4):</label>
+                    <input
+                      className="ig-input"
+                      value={mediaUrl}
+                      onChange={(event) => setMediaUrl(event.target.value)}
+                      placeholder="Video URL (.mp4)"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--tcl-muted)" }}>Caption:</label>
+                <textarea
+                  className="ig-textarea"
+                  value={caption}
+                  onChange={(event) => setCaption(event.target.value)}
+                  placeholder={uploadType === "post" ? "Write a caption..." : "Write a caption for your Reel..."}
+                />
+              </div>
+
               <button className="ig-btn-primary" type="submit" disabled={posting}>
-                {posting ? "Posting…" : "Share"}
+                {posting ? "Sharing…" : "Share Now"}
               </button>
             </form>
           )}

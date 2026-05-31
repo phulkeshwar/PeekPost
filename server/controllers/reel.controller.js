@@ -91,3 +91,11 @@ export const deleteReel = asyncHandler(async (req, res) => {
   await Reel.deleteOne({ _id: req.params.id });
   res.json({ message: "Reel deleted" });
 });
+
+export const getReelsByUser = asyncHandler(async (req, res) => {
+  const reels = await Reel.find({ author: req.params.userId })
+    .populate("author", "username fullName avatar")
+    .sort({ createdAt: -1 });
+
+  res.json(reels);
+});

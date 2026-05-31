@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import ReelPlayer from "../components/reels/ReelPlayer";
 import { api } from "../services/api";
 import { MOCK_REELS } from "../utils/mockData";
@@ -29,9 +29,9 @@ const MusicIcon = () => (
 );
 
 const Reels = () => {
+  const containerRef = useRef(null);
   const [items, setItems] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [touchY, setTouchY] = useState(null);
 
   // Dynamic state arrays mapping to loaded Reels
   const [likedMap, setLikedMap] = useState({});
@@ -54,12 +54,13 @@ const Reels = () => {
   const load = async () => {
     try {
       const { data } = await api.get("/reels/feed");
-      setItems(data.length ? data : MOCK_REELS);
+      const finalData = data.length ? data : MOCK_REELS;
+      setItems(finalData);
       
       // Initialize likes mapping from loaded records
       const initialLikes = {};
       const initialCounts = {};
-      data.forEach((r) => {
+      finalData.forEach((r) => {
         initialLikes[r._id] = false;
         initialCounts[r._id] = r.likes?.length || 0;
       });
@@ -83,19 +84,40 @@ const Reels = () => {
     load();
   }, []);
 
+  // IntersectionObserver to auto-track the active snapped card
+  useEffect(() => {
+    if (!items.length) return;
+
+    const observerOptions = {
+      root: containerRef.current,
+      rootMargin: "0px",
+      threshold: 0.6 // active when 60% in viewport
+    };
+
+    const observerCallback = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const index = Number(entry.target.getAttribute("data-index"));
+          setActiveIndex(index);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const elements = containerRef.current?.querySelectorAll(".ig-reel-active");
+    elements?.forEach((el) => observer.observe(el));
+
+    return () => {
+      elements?.forEach((el) => observer.unobserve(el));
+    };
+  }, [items]);
+
+  // Auto-close comments when switching reels
+  useEffect(() => {
+    setShowComments(false);
+  }, [activeIndex]);
+
   const activeReel = items[activeIndex];
-
-  const goNext = () => {
-    if (!items.length) return;
-    setShowComments(false);
-    setActiveIndex((prev) => (prev + 1) % items.length);
-  };
-
-  const goPrev = () => {
-    if (!items.length) return;
-    setShowComments(false);
-    setActiveIndex((prev) => (prev - 1 + items.length) % items.length);
-  };
 
   const handleLikeReel = async (reelId) => {
     const isLiked = likedMap[reelId];
@@ -142,195 +164,173 @@ const Reels = () => {
     setNewCommentText("");
   };
 
-  // Keyboard events
-  useEffect(() => {
-    const onKey = (event) => {
-      if (!items.length) return;
-      if (event.key === "ArrowUp") goPrev();
-      if (event.key === "ArrowDown") goNext();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [items.length, activeIndex]);
-
   return (
-    <div
-      className="ig-reels-wrap"
-      onWheel={(event) => {
-        if (!items.length) return;
-        if (event.deltaY > 12) goNext();
-        if (event.deltaY < -12) goPrev();
-      }}
-      onTouchStart={(event) => setTouchY(event.changedTouches[0].clientY)}
-      onTouchEnd={(event) => {
-        if (touchY === null) return;
-        const delta = event.changedTouches[0].clientY - touchY;
-        if (delta < -25) goNext();
-        if (delta > 25) goPrev();
-        setTouchY(null);
-      }}
-    >
-      {activeReel && (
-        <article className="ig-reel-active">
-          {/* Vertical Video Frame */}
-          <div style={{ width: "100%", height: "100%", position: "relative" }}>
-            <ReelPlayer
-              src={activeReel.videoUrl}
-              onDoubleClick={() => handleLikeReel(activeReel._id)}
-            />
-          </div>
+    <div className="ig-reels-wrap" ref={containerRef}>
+      {items.map((reel, index) => {
+        const isCurrentlyPlaying = activeIndex === index;
+        const totalComments = getCommentsList(reel._id).length;
 
-          {/* Bottom Caption Overlay */}
-          <div className="ig-reel-overlay">
-            <div className="ig-reel-author">
-              <img
-                src={activeReel.author?.avatar || "https://placehold.co/60x60?text=U"}
-                alt={activeReel.author?.username}
-                style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid white", objectFit: "cover" }}
+        return (
+          <article
+            key={reel._id || `reel-${index}`}
+            className="ig-reel-active"
+            data-index={index}
+          >
+            {/* Vertical Video Frame */}
+            <div style={{ width: "100%", height: "100%", position: "relative" }}>
+              <ReelPlayer
+                src={reel.videoUrl}
+                playing={isCurrentlyPlaying}
+                onDoubleClick={() => handleLikeReel(reel._id)}
               />
-              <span>@{activeReel.author?.username || "creator"}</span>
-              <button 
-                type="button" 
-                style={{ background: "transparent", border: "1.5px solid white", borderRadius: 4, padding: "2px 8px", fontSize: 10, color: "white", fontWeight: 700, cursor: "pointer" }}
-              >
-                Follow
+            </div>
+
+            {/* Bottom Caption Overlay */}
+            <div className="ig-reel-overlay">
+              <div className="ig-reel-author">
+                <img
+                  src={reel.author?.avatar || "https://placehold.co/60x60?text=U"}
+                  alt={reel.author?.username}
+                  style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid white", objectFit: "cover" }}
+                />
+                <span>@{reel.author?.username || "creator"}</span>
+                <button 
+                  type="button" 
+                  style={{ background: "transparent", border: "1.5px solid white", borderRadius: 4, padding: "2px 8px", fontSize: 10, color: "white", fontWeight: 700, cursor: "pointer" }}
+                >
+                  Follow
+                </button>
+              </div>
+              <div className="ig-reel-caption">{reel.caption || "No caption provided."}</div>
+              
+              {/* Audio Indicator */}
+              <div style={{ display: "flex", alignItems: "center", fontSize: 12, opacity: 0.85, marginTop: 4 }}>
+                <MusicIcon />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {reel.audio?.title || "Original Audio"} · {reel.audio?.artist || reel.author?.username || "PeekPost"}
+                </span>
+              </div>
+            </div>
+
+            {/* Absolute Right-Hand Controls Grid */}
+            <div className="ig-reel-actions-column">
+              <button className="ig-reel-action-btn" type="button" onClick={() => handleLikeReel(reel._id)}>
+                <HeartIcon filled={likedMap[reel._id]} />
+                <span>{(likesCountMap[reel._id] || 0).toLocaleString()}</span>
+              </button>
+
+              <button className="ig-reel-action-btn" type="button" onClick={() => setShowComments(!showComments)}>
+                <BubbleIcon />
+                <span>{totalComments}</span>
+              </button>
+
+              <button className="ig-reel-action-btn" type="button" onClick={() => handleShareReel(reel._id)}>
+                <ShareIcon />
+                <span>{reel.shares || 0}</span>
               </button>
             </div>
-            <div className="ig-reel-caption">{activeReel.caption || "No caption provided."}</div>
-            
-            {/* Audio Indicator */}
-            <div style={{ display: "flex", alignItems: "center", fontSize: 12, opacity: 0.85, marginTop: 4 }}>
-              <MusicIcon />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {activeReel.audio?.title || "Original Audio"} · {activeReel.audio?.artist || activeReel.author?.username || "PeekPost"}
-              </span>
-            </div>
 
-            {/* Navigation buttons pre-installed */}
-            <div className="ig-reel-controls" style={{ pointerEvents: "auto" }}>
-              <button type="button" className="ig-profile-btn" onClick={goPrev} style={{ color: "white", borderColor: "rgba(255,255,255,0.45)", background: "rgba(0,0,0,0.25)" }}>Previous</button>
-              <button type="button" className="ig-profile-btn" onClick={goNext} style={{ color: "white", borderColor: "rgba(255,255,255,0.45)", background: "rgba(0,0,0,0.25)" }}>Next</button>
-            </div>
-          </div>
-
-          {/* Absolute Right-Hand Controls Grid */}
-          <div className="ig-reel-actions-column">
-            <button className="ig-reel-action-btn" type="button" onClick={() => handleLikeReel(activeReel._id)}>
-              <HeartIcon filled={likedMap[activeReel._id]} />
-              <span>{(likesCountMap[activeReel._id] || 0).toLocaleString()}</span>
-            </button>
-
-            <button className="ig-reel-action-btn" type="button" onClick={() => setShowComments(!showComments)}>
-              <BubbleIcon />
-              <span>{getCommentsList(activeReel._id).length}</span>
-            </button>
-
-            <button className="ig-reel-action-btn" type="button" onClick={() => handleShareReel(activeReel._id)}>
-              <ShareIcon />
-              <span>{activeReel.shares || 0}</span>
-            </button>
-          </div>
-
-          {/* Share Flash Banner */}
-          {shareNotice && (
-            <div style={{ position: "absolute", top: 20, left: 20, right: 20, background: "rgba(0,102,255,0.9)", color: "white", padding: "8px 12px", borderRadius: 8, fontSize: 12, zIndex: 12, textAlign: "center", fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.25)" }}>
-              {shareNotice}
-            </div>
-          )}
-
-          {/* Sliding Bottom Comments Drawer */}
-          {showComments && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: "380px",
-                background: "var(--tcl-surface)",
-                borderTopLeftRadius: "18px",
-                borderTopRightRadius: "18px",
-                boxShadow: "0 -8px 24px rgba(0,0,0,0.25)",
-                zIndex: 20,
-                padding: "1rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem",
-                transition: "transform 0.3s ease"
-              }}
-            >
-              {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--tcl-border)", paddingBottom: "0.5rem" }}>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>Comments ({getCommentsList(activeReel._id).length})</span>
-                <button
-                  type="button"
-                  onClick={() => setShowComments(false)}
-                  style={{ background: "transparent", border: "none", fontSize: "1.25rem", color: "var(--tcl-muted)", cursor: "pointer" }}
-                >
-                  ✕
-                </button>
+            {/* Share Flash Banner (only on active card) */}
+            {shareNotice && isCurrentlyPlaying && (
+              <div style={{ position: "absolute", top: 20, left: 20, right: 20, background: "rgba(0,102,255,0.9)", color: "white", padding: "8px 12px", borderRadius: 8, fontSize: 12, zIndex: 12, textAlign: "center", fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.25)" }}>
+                {shareNotice}
               </div>
+            )}
 
-              {/* List */}
-              <div style={{ flex: 1, overflowY: "auto", display: "grid", gap: "0.75rem", paddingRight: 4 }}>
-                {getCommentsList(activeReel._id).map((c) => (
-                  <div key={c.id} style={{ display: "flex", gap: "8px", fontSize: 13, alignItems: "start" }}>
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        background: "var(--tcl-blue)",
-                        color: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifycontent: "center",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        flexShrink: 0
-                      }}
-                    >
-                      {c.author[0].toUpperCase()}
+            {/* Sliding Bottom Comments Drawer (only on active card) */}
+            {showComments && isCurrentlyPlaying && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: "380px",
+                  background: "var(--tcl-surface)",
+                  borderTopLeftRadius: "18px",
+                  borderTopRightRadius: "18px",
+                  boxShadow: "0 -8px 24px rgba(0,0,0,0.25)",
+                  zIndex: 20,
+                  padding: "1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.75rem",
+                  transition: "transform 0.3s ease"
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--tcl-border)", paddingBottom: "0.5rem" }}>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>Comments ({totalComments})</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowComments(false)}
+                    style={{ background: "transparent", border: "none", fontSize: "1.25rem", color: "var(--tcl-muted)", cursor: "pointer" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* List */}
+                <div style={{ flex: 1, overflowY: "auto", display: "grid", gap: "0.75rem", paddingRight: 4 }}>
+                  {getCommentsList(reel._id).map((c) => (
+                    <div key={c.id} style={{ display: "flex", gap: "8px", fontSize: 13, alignItems: "start" }}>
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          background: "var(--tcl-blue)",
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          flexShrink: 0
+                        }}
+                      >
+                        {c.author[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <strong style={{ marginRight: 6 }}>{c.author}</strong>
+                        <span style={{ color: "var(--tcl-text)" }}>{c.text}</span>
+                        <div style={{ fontSize: 10, color: "var(--tcl-muted)", marginTop: 2 }}>{c.time}</div>
+                      </div>
                     </div>
-                    <div>
-                      <strong style={{ marginRight: 6 }}>{c.author}</strong>
-                      <span style={{ color: "var(--tcl-text)" }}>{c.text}</span>
-                      <div style={{ fontSize: 10, color: "var(--tcl-muted)", marginTop: 2 }}>{c.time}</div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                {/* Input */}
+                <form onSubmit={handleAddComment} style={{ display: "flex", gap: "8px", borderTop: "1px solid var(--tcl-border)", paddingTop: "0.5rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    style={{
+                      flex: 1,
+                      background: "var(--tcl-bg)",
+                      border: "1px solid var(--tcl-border)",
+                      borderRadius: "18px",
+                      padding: "6px 12px",
+                      fontSize: 13,
+                      color: "var(--tcl-text)",
+                      outline: "none"
+                    }}
+                  />
+                  <button
+                    className="ig-btn-primary"
+                    type="submit"
+                    style={{ padding: "4px 12px", borderRadius: "18px", fontSize: 12 }}
+                  >
+                    Send
+                  </button>
+                </form>
               </div>
-
-              {/* Input */}
-              <form onSubmit={handleAddComment} style={{ display: "flex", gap: "8px", borderTop: "1px solid var(--tcl-border)", paddingTop: "0.5rem" }}>
-                <input
-                  type="text"
-                  placeholder="Add a comment..."
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                  style={{
-                    flex: 1,
-                    background: "var(--tcl-bg)",
-                    border: "1px solid var(--tcl-border)",
-                    borderRadius: "18px",
-                    padding: "6px 12px",
-                    fontSize: 13,
-                    color: "var(--tcl-text)",
-                    outline: "none"
-                  }}
-                />
-                <button
-                  className="ig-btn-primary"
-                  type="submit"
-                  style={{ padding: "4px 12px", borderRadius: "18px", fontSize: 12 }}
-                >
-                  Send
-                </button>
-              </form>
-            </div>
-          )}
-        </article>
-      )}
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 };

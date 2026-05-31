@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../../services/api";
 
 const GridIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -30,8 +31,29 @@ const DEMO_IMGS = [
   "https://picsum.photos/seed/portrait-dark/600/600",
 ];
 
-const PostGrid = ({ posts = [] }) => {
+const PostGrid = ({ posts = [], userId }) => {
   const [activeTab, setActiveTab] = useState("posts");
+  const [reels, setReels] = useState([]);
+  const [loadingReels, setLoadingReels] = useState(false);
+
+  // Fetch user specific reels when switching to the Reels tab
+  useEffect(() => {
+    if (activeTab !== "reels" || !userId) return;
+
+    const fetchReels = async () => {
+      setLoadingReels(true);
+      try {
+        const { data } = await api.get(`/reels/user/${userId}`);
+        setReels(data);
+      } catch (err) {
+        console.error("Failed to load user reels:", err);
+      } finally {
+        setLoadingReels(false);
+      }
+    };
+
+    fetchReels();
+  }, [activeTab, userId]);
 
   /* Merge real posts + padded demo tiles */
   const allPosts = posts.length > 0 ? posts : DEMO_IMGS.map((url, i) => ({
@@ -60,16 +82,60 @@ const PostGrid = ({ posts = [] }) => {
         ))}
       </div>
 
-      {/* Grid */}
-      <section className="ig-post-grid">
-        {allPosts.map((post) => (
-          <div key={post._id} className="ig-post-tile">
-            {post.media?.[0]?.url ? (
-              <img src={post.media[0].url} alt={post.caption || "post"} />
-            ) : null}
-          </div>
-        ))}
-      </section>
+      {/* Grid Display based on Tab */}
+      {activeTab === "posts" && (
+        <section className="ig-post-grid">
+          {allPosts.map((post) => (
+            <div key={post._id} className="ig-post-tile">
+              {post.media?.[0]?.url ? (
+                <img src={post.media[0].url} alt={post.caption || "post"} />
+              ) : null}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {activeTab === "reels" && (
+        <>
+          {loadingReels ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "var(--tcl-muted)" }}>
+              Loading Reels…
+            </div>
+          ) : reels.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--tcl-muted)", display: "grid", gap: "10px" }}>
+              <span style={{ fontSize: "40px" }}>📹</span>
+              <h3 style={{ fontWeight: 600, color: "var(--tcl-text)" }}>No Reels Yet</h3>
+              <p style={{ fontSize: "13px" }}>Share short video moments with your followers.</p>
+            </div>
+          ) : (
+            <section className="ig-post-grid">
+              {reels.map((reel) => (
+                <div key={reel._id} className="ig-post-tile" style={{ position: "relative" }}>
+                  {reel.coverUrl ? (
+                    <img src={reel.coverUrl} alt={reel.caption} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: "#161b26", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: "32px" }}>🎬</span>
+                    </div>
+                  )}
+                  {/* Premium overlay with play count indicator */}
+                  <div style={{ position: "absolute", bottom: "10px", left: "10px", display: "flex", alignItems: "center", gap: "6px", color: "white", fontSize: "11px", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
+                    <span style={{ fontSize: "9px" }}>▶</span> <span>{(reel.shares || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
+        </>
+      )}
+
+      {activeTab === "tagged" && (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--tcl-muted)", display: "grid", gap: "10px" }}>
+          <span style={{ fontSize: "40px" }}>🏷️</span>
+          <h3 style={{ fontWeight: 600, color: "var(--tcl-text)" }}>Photos of you</h3>
+          <p style={{ fontSize: "13px" }}>When people tag you in photos or videos, they'll appear here.</p>
+        </div>
+      )}
     </>
   );
 };

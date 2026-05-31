@@ -112,7 +112,7 @@ const Profile = () => {
         onMessage={startingChat ? undefined : openConversation}
         onFollow={handleFollow}
       />
-      <PostGrid posts={posts} />
+      <PostGrid posts={posts} userId={displayProfile.id} />
     </div>
   );
 };
